@@ -186,7 +186,6 @@ server {
 rm -rf /home/vito/vito
 mkdir /home/vito/vito
 chown -R vito:vito /home/vito/vito
-chmod -R 755 /home/vito/vito
 rm /etc/nginx/sites-available/default
 rm /etc/nginx/sites-enabled/default
 echo "${V_VHOST_CONFIG}" | tee /etc/nginx/sites-available/vito
@@ -195,8 +194,8 @@ service nginx restart
 rm -rf /home/vito/vito
 git config --global core.fileMode false
 git clone -b ${VITO_VERSION} ${V_REPO} /home/vito/vito
-find /home/vito/vito -type d -exec chmod 755 {} \;
-find /home/vito/vito -type f -exec chmod 644 {} \;
+chown -R vito:vito /home/vito/vito
+chmod -R u=rwX,go=rX /home/vito/vito
 cd /home/vito/vito && git config core.fileMode false
 cd /home/vito/vito
 if [[ "${VITO_CHANNEL}" == "release" ]]; then
@@ -211,6 +210,12 @@ fi
 composer install --no-dev
 cp .env.prod .env
 sed -i "s|^APP_URL=.*|APP_URL=${VITO_APP_URL}|" .env
+rm -rf /home/vito/vito/node_modules /home/vito/vito/public/build
+mkdir -p /home/vito/vito/public/build
+chown -R vito:vito /home/vito/vito/public/build
+if ! sudo -u vito bash -lc 'cd /home/vito/vito && npm ci && npm run build'; then
+  echo 'Error building frontend assets' && exit 1
+fi
 touch /home/vito/vito/storage/database.sqlite
 php artisan key:generate
 php artisan storage:link

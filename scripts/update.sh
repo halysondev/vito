@@ -37,6 +37,15 @@ git pull origin "$NEW_RELEASE"
 echo "Installing composer dependencies..."
 composer install --no-dev
 
+echo "Installing frontend dependencies and building assets..."
+rm -rf /home/vito/vito/node_modules /home/vito/vito/public/build
+mkdir -p /home/vito/vito/public/build
+chown -R vito:vito /home/vito/vito/public/build
+if ! sudo -u vito bash -lc 'cd /home/vito/vito && npm ci && npm run build'; then
+  echo "❌ Failed to build frontend assets."
+  exit 1
+fi
+
 echo "Running migrations..."
 php artisan migrate --force
 
