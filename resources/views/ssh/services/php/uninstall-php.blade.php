@@ -1,3 +1,5 @@
+@include('ssh.os.apt-retry')
+
 sudo systemctl stop php{{ $version }}-fpm
 
 if ! sudo DEBIAN_FRONTEND=noninteractive apt-get remove -y php{{ $version }} php{{ $version }}-fpm php{{ $version }}-mbstring php{{ $version }}-mysql php{{ $version }}-mcrypt php{{ $version }}-gd php{{ $version }}-xml php{{ $version }}-curl php{{ $version }}-gettext php{{ $version }}-zip php{{ $version }}-bcmath php{{ $version }}-soap php{{ $version }}-redis php{{ $version }}-sqlite3; then

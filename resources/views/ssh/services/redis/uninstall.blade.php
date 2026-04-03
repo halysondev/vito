@@ -1,6 +1,8 @@
+@include('ssh.os.apt-retry')
+
 sudo systemctl stop redis-server
 
-sudo DEBIAN_FRONTEND=noninteractive apt-get remove redis-server -y
+vito_retry_apt sudo DEBIAN_FRONTEND=noninteractive apt-get remove redis-server -y
 
 sudo rm -rf /etc/redis
 sudo rm -rf /var/lib/redis
@@ -10,6 +12,6 @@ sudo rm -rf /var/run/redis/redis-server.pid
 sudo rm -rf /var/run/redis/redis-server.sock
 sudo rm -rf /var/run/redis/redis-server.sock
 
-sudo DEBIAN_FRONTEND=noninteractive sudo apt-get autoremove -y
+vito_retry_apt sudo DEBIAN_FRONTEND=noninteractive sudo apt-get autoremove -y
 
-sudo DEBIAN_FRONTEND=noninteractive sudo apt-get autoclean -y
+vito_retry_apt sudo DEBIAN_FRONTEND=noninteractive sudo apt-get autoclean -y

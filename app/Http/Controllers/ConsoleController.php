@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Actions\WebSockets\GenerateWebSocketToken;
+use App\Actions\WebSockets\ResolveWebSocketUrl;
 use App\Http\Resources\ServerResource;
 use App\Models\Server;
 use Illuminate\Http\JsonResponse;
@@ -46,20 +47,7 @@ class ConsoleController extends Controller
             'user_id' => $request->user()->id,
             'ssh_user' => $request->input('user'),
         ]);
-
-        $appUrl = parse_url(config('app.url'));
-        $isSecure = ($appUrl['scheme'] ?? 'http') === 'https';
-        $wsProtocol = $isSecure ? 'wss' : 'ws';
-        $host = $appUrl['host'] ?? 'localhost';
-        $port = $appUrl['port'] ?? ($isSecure ? 443 : 80);
-
-        if (app()->environment('local')) {
-            $wsPort = config('core.ws_port', 8085);
-            $result['url'] = "{$wsProtocol}://{$host}:{$wsPort}/ws/terminal";
-        } else {
-            $portSuffix = (($isSecure && $port == 443) || (! $isSecure && $port == 80)) ? '' : ":{$port}";
-            $result['url'] = "{$wsProtocol}://{$host}{$portSuffix}/ws/terminal";
-        }
+        $result['url'] = app(ResolveWebSocketUrl::class)->forRequest($request, '/ws/terminal');
 
         return response()->json($result);
     }

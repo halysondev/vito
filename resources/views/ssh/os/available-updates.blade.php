@@ -1,4 +1,6 @@
-sudo DEBIAN_FRONTEND=noninteractive apt-get update
+@include('ssh.os.apt-retry')
+
+vito_retry_apt sudo DEBIAN_FRONTEND=noninteractive apt-get update
 
 AVAILABLE_UPDATES=$(sudo DEBIAN_FRONTEND=noninteractive apt list --upgradable | wc -l)
 

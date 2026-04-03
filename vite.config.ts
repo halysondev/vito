@@ -4,6 +4,16 @@ import laravel from 'laravel-vite-plugin';
 import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
 
+const vitePort = Number(process.env.VITE_PORT ?? 5173);
+
+const resolveHmrHost = (): string => {
+  try {
+    return new URL(process.env.APP_URL ?? 'http://localhost').hostname;
+  } catch {
+    return 'localhost';
+  }
+};
+
 export default defineConfig({
   plugins: [
     laravel({
@@ -16,6 +26,14 @@ export default defineConfig({
   ],
   esbuild: {
     jsx: 'automatic',
+  },
+  server: {
+    host: '0.0.0.0',
+    port: vitePort,
+    strictPort: true,
+    hmr: {
+      host: resolveHmrHost(),
+    },
   },
   resolve: {
     alias: {

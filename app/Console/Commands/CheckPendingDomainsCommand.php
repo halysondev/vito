@@ -6,6 +6,7 @@ use App\Enums\HostedDomainStatus;
 use App\Jobs\HostedDomain\CheckDomainJob;
 use App\Models\HostedDomain;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Schema;
 
 class CheckPendingDomainsCommand extends Command
 {
@@ -15,6 +16,10 @@ class CheckPendingDomainsCommand extends Command
 
     public function handle(): void
     {
+        if (! Schema::hasTable((new HostedDomain)->getTable())) {
+            return;
+        }
+
         HostedDomain::query()
             ->where('status', HostedDomainStatus::PENDING)
             ->where('updated_at', '>=', now()->subHours(24))

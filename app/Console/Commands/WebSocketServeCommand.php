@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Actions\WebSockets\ResolveWebSocketUrl;
 use App\WebSocket\EventsHandler;
 use App\WebSocket\TerminalHandler;
 use App\WebSocket\WebSocketServer;
@@ -29,13 +30,7 @@ class WebSocketServeCommand extends Command
             $this->warn('WS_BROADCAST_SECRET not set, falling back to APP_KEY. Set a dedicated secret for production.');
         }
 
-        $allowedOrigins = config('core.ws_allowed_origins', []);
-        if ($allowedOrigins === []) {
-            $appUrl = config('app.url');
-            if ($appUrl) {
-                $allowedOrigins = [$appUrl];
-            }
-        }
+        $allowedOrigins = app(ResolveWebSocketUrl::class)->allowedOrigins();
 
         $loop = Loop::get();
 

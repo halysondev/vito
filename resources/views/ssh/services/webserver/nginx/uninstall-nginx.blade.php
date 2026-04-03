@@ -1,6 +1,8 @@
+@include('ssh.os.apt-retry')
+
 sudo service nginx stop
 
-sudo DEBIAN_FRONTEND=noninteractive apt-get purge nginx nginx-common nginx-full -y
+vito_retry_apt sudo DEBIAN_FRONTEND=noninteractive apt-get purge nginx nginx-common nginx-full -y
 
 sudo rm -rf /etc/nginx
 sudo rm -rf /var/log/nginx

@@ -1,8 +1,11 @@
 <?php
 
+use App\Http\Middleware\MustBeAdminMiddleware;
+use App\Support\LogViewerIncludeFiles;
 use Opcodes\LogViewer\Enums\FolderSortingMethod;
 use Opcodes\LogViewer\Enums\SortingOrder;
 use Opcodes\LogViewer\Enums\Theme;
+use Opcodes\LogViewer\Http\Middleware\EnsureFrontendRequestsAreStateful;
 
 return [
 
@@ -88,7 +91,7 @@ return [
     'middleware' => [
         'web',
         'auth',
-        \App\Http\Middleware\MustBeAdminMiddleware::class,
+        MustBeAdminMiddleware::class,
     ],
 
     /*
@@ -101,9 +104,9 @@ return [
     */
 
     'api_middleware' => [
-        \Opcodes\LogViewer\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+        EnsureFrontendRequestsAreStateful::class,
         'auth',
-        \App\Http\Middleware\MustBeAdminMiddleware::class,
+        MustBeAdminMiddleware::class,
     ],
 
     /*
@@ -151,25 +154,7 @@ return [
     |
     */
 
-    'include_files' => [
-        '*.log',
-        '**/*.log',
-
-        // You can include paths to other log types as well, such as apache, nginx, and more.
-        // This key => value pair can be used to rename and group multiple paths into one folder in the UI.
-        '/var/log/httpd/*' => 'Apache',
-        '/var/log/nginx/*' => 'Nginx',
-
-        // MacOS Apple Silicon logs
-        '/opt/homebrew/var/log/nginx/*',
-        '/opt/homebrew/var/log/httpd/*',
-        '/opt/homebrew/var/log/php-fpm.log',
-        '/opt/homebrew/var/log/postgres*log',
-        '/opt/homebrew/var/log/redis*log',
-        '/opt/homebrew/var/log/supervisor*log',
-
-        // '/absolute/paths/supported',
-    ],
+    'include_files' => LogViewerIncludeFiles::resolve((bool) env('LOG_VIEWER_INCLUDE_SYSTEM_LOGS', false)),
 
     /*
     |--------------------------------------------------------------------------

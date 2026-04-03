@@ -18,6 +18,10 @@ use Illuminate\Support\Sleep;
 
 class InstallServer
 {
+    private const MAX_WAIT_SECONDS = 180;
+
+    private const RETRY_INTERVAL_SECONDS = 10;
+
     protected Server $server;
 
     /**
@@ -27,25 +31,56 @@ class InstallServer
     {
         $this->server = $server;
 
-        $maxWait = 180;
-        while ($maxWait > 0) {
-            if (! $this->server->provider()->isRunning()) {
-                continue;
-            }
-            try {
-                $this->server->ssh()->connect();
-                break;
-            } catch (SSHConnectionError) {
-                // ignore
-            }
-            Sleep::sleep(10);
-            $maxWait -= 10;
-        }
+        $this->waitForProvider();
+        $this->waitForSsh();
+
         $this->install();
         $this->server->update([
             'status' => ServerStatus::READY,
         ]);
         Notifier::send($this->server, new ServerInstallationSucceed($this->server));
+    }
+
+    /**
+     * @throws SSHConnectionError
+     */
+    protected function waitForProvider(): void
+    {
+        $remainingWait = self::MAX_WAIT_SECONDS;
+
+        while ($remainingWait > 0) {
+            if ($this->server->provider()->isRunning()) {
+                return;
+            }
+
+            Sleep::sleep(self::RETRY_INTERVAL_SECONDS);
+            $remainingWait -= self::RETRY_INTERVAL_SECONDS;
+            $this->server->refresh();
+        }
+
+        throw new SSHConnectionError('Timed out waiting for the server provider to report the server as running.');
+    }
+
+    /**
+     * @throws SSHConnectionError
+     */
+    protected function waitForSsh(): void
+    {
+        $remainingWait = self::MAX_WAIT_SECONDS;
+
+        while ($remainingWait > 0) {
+            try {
+                $this->server->ssh()->connect();
+
+                return;
+            } catch (SSHConnectionError) {
+                Sleep::sleep(self::RETRY_INTERVAL_SECONDS);
+                $remainingWait -= self::RETRY_INTERVAL_SECONDS;
+                $this->server->refresh();
+            }
+        }
+
+        throw new SSHConnectionError('Timed out waiting for SSH to become available.');
     }
 
     /**

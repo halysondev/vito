@@ -1,6 +1,8 @@
+@include('ssh.os.apt-retry')
+
 sudo service caddy stop
 
-sudo DEBIAN_FRONTEND=noninteractive sudo apt remove caddy -y
+vito_retry_apt sudo DEBIAN_FRONTEND=noninteractive sudo apt remove caddy -y
 
 sudo rm -rf /etc/caddy
 sudo rm -rf /var/log/caddy

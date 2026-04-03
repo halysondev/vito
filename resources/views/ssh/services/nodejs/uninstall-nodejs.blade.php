@@ -1,15 +1,17 @@
+@include('ssh.os.apt-retry')
+
 echo "Uninstalling Node.js and npm..."
 
 # Remove Node.js and npm binaries
-sudo apt-get purge -y nodejs
+vito_retry_apt sudo apt-get purge -y nodejs
 
 # Remove NodeSource APT repo config
 sudo rm -f /etc/apt/sources.list.d/nodesource.list
 sudo rm -f /usr/share/keyrings/nodesource.gpg
 
 # Clean up unused packages and cache
-sudo apt-get autoremove -y
-sudo apt-get clean
+vito_retry_apt sudo apt-get autoremove -y
+vito_retry_apt sudo apt-get clean
 
 if [ -d "$HOME/.nvm" ]; then
   echo "Found nvm installation. Removing..."

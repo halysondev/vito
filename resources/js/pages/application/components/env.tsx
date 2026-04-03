@@ -13,6 +13,7 @@ import { Site } from '@/types/site';
 import { Input } from '@/components/ui/input';
 import { useInputFocus } from '@/stores/useInputFocus';
 import { EnvVariable } from '@/types/env';
+import { readClipboardText } from '@/lib/clipboard';
 import EnvVariableRow from './env-variable-row';
 
 function generateUniqueKey(existingKeys: string[]): string {
@@ -196,7 +197,7 @@ export default function Env({ site, children }: { site: Site; children: ReactNod
 
   const handlePasteFromClipboard = async () => {
     try {
-      const content = await navigator.clipboard.readText();
+      const content = await readClipboardText();
       if (!content.trim()) {
         setUploadError('Clipboard is empty');
         return;
@@ -226,7 +227,7 @@ export default function Env({ site, children }: { site: Site; children: ReactNod
       if (axios.isAxiosError(error)) {
         setUploadError(error.response?.data?.message || 'Failed to parse clipboard content');
       } else {
-        setUploadError('Failed to read from clipboard');
+        setUploadError(error instanceof Error ? error.message : 'Failed to read from clipboard');
       }
     } finally {
       setIsPasting(false);

@@ -3,11 +3,13 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { CheckCircle2Icon } from 'lucide-react';
+import { copyTextToClipboard } from '@/lib/clipboard';
 
 export default function CopyableBadge({ text, tooltip }: { text: string | null | undefined; tooltip?: boolean }) {
   const [copySuccess, setCopySuccess] = useState(false);
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(text || '').then(() => {
+  const copyToClipboard = async () => {
+    try {
+      await copyTextToClipboard(text || '');
       setCopySuccess(true);
       toast(
         <div className="flex items-center gap-2">
@@ -18,7 +20,9 @@ export default function CopyableBadge({ text, tooltip }: { text: string | null |
       setTimeout(() => {
         setCopySuccess(false);
       }, 2000);
-    });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to copy to clipboard');
+    }
   };
 
   return (

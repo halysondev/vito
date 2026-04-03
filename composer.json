@@ -23,18 +23,20 @@
     "mobiledetect/mobiledetectlib": "^4.8",
     "mustache/mustache": "^3.0",
     "opcodesio/log-viewer": "^3.17",
-    "phpseclib/phpseclib": "3.0.43",
+    "phpseclib/phpseclib": "3.0.50",
     "ratchet/rfc6455": "^0.4",
     "react/event-loop": "^1.5",
     "react/socket": "^1.17",
+    "resend/resend-php": "^1.2",
     "spatie/laravel-route-attributes": "^1.24",
     "symfony/yaml": "^7.3",
     "tightenco/ziggy": "^2.5"
   },
   "require-dev": {
     "fakerphp/faker": "^1.9.1",
+    "fruitcake/laravel-debugbar": "^4.2",
     "larastan/larastan": "^3.1",
-    "laravel/boost": "^1.1",
+    "laravel/boost": "^2.0",
     "laravel/pail": "^1.2",
     "laravel/pint": "^1.10",
     "laravel/sail": "^1.18",
@@ -65,7 +67,9 @@
       "@php artisan package:discover --ansi"
     ],
     "post-update-cmd": [
-      "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
+      "@php artisan vendor:publish --tag=laravel-assets --ansi --force",
+      "@php artisan boost:update --discover",
+      "@php artisan boost:update --ansi "
     ],
     "post-root-package-install": [
       "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
@@ -81,9 +85,10 @@
       "touch storage/database-test.sqlite",
       "@php artisan test"
     ],
+    "dev:stop": "bash scripts/dev.sh stop",
     "dev": [
       "Composer\\Config::disableProcessTimeout",
-      "npx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74,#fabb74,#86efac\" \"php artisan serve\" \"php artisan horizon\" \"php artisan schedule:work\" \"php artisan pail --timeout=0\" \"npm run dev\" \"php artisan ws:serve\" --names=server,horizon,schedule,logs,vite,websocket"
+      "bash scripts/dev.sh start"
     ]
   },
   "repositories": [

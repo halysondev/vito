@@ -19,6 +19,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Project } from '@/types/project';
 import { MultiSelect } from '@/components/multi-select';
+import { copyTextToClipboard } from '@/lib/clipboard';
+import { toast } from 'sonner';
 
 type ApiKeyForm = {
   name: string;
@@ -31,14 +33,18 @@ export default function CreateApiKey({ children, projects }: { children: ReactNo
   const [token, setToken] = useState<string | undefined>();
   const tokenInputRef = useRef<HTMLInputElement>(null);
   const [copySuccess, setCopySuccess] = useState(false);
-  const copyToClipboard = () => {
+  const copyToClipboard = async () => {
     tokenInputRef.current?.select();
-    navigator.clipboard.writeText(token || '').then(() => {
+
+    try {
+      await copyTextToClipboard(token || '');
       setCopySuccess(true);
       setTimeout(() => {
         setCopySuccess(false);
       }, 2000);
-    });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to copy to clipboard');
+    }
   };
 
   const form = useForm<Required<ApiKeyForm>>({

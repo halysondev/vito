@@ -1,9 +1,11 @@
+@include('ssh.os.apt-retry')
+
 sudo service postgresql stop
 sudo systemctl stop postgresql 2>/dev/null || true
 
-sudo DEBIAN_FRONTEND=noninteractive apt-get purge -y postgresql-*
-sudo DEBIAN_FRONTEND=noninteractive apt-get autoremove -y
-sudo DEBIAN_FRONTEND=noninteractive apt-get autoclean -y
+vito_retry_apt sudo DEBIAN_FRONTEND=noninteractive apt-get purge -y postgresql-*
+vito_retry_apt sudo DEBIAN_FRONTEND=noninteractive apt-get autoremove -y
+vito_retry_apt sudo DEBIAN_FRONTEND=noninteractive apt-get autoclean -y
 
 # Remove repository and keys
 sudo rm -f /etc/apt/sources.list.d/pgdg.list

@@ -3,9 +3,12 @@
 namespace Tests\Feature;
 
 use App\Actions\WebSockets\GenerateWebSocketToken;
+use App\Actions\WebSockets\ResolveWebSocketUrl;
 use App\WebSocket\EventsHandler;
+use App\WebSocket\WebSocketConnection;
 use GuzzleHttp\Psr7\Request as PsrRequest;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Tests\TestCase;
 
 class EventsHandlerTest extends TestCase
@@ -35,6 +38,27 @@ class EventsHandlerTest extends TestCase
         $request = new PsrRequest('GET', '/ws/events?token='.$token);
 
         $this->assertNull($handler->authenticate($request));
+    }
+
+    public function test_default_public_events_websocket_url_uses_standard_https_ports(): void
+    {
+        config()->set('app.ws_url', null);
+        $request = Request::create('https://events.example.test/events/token', 'POST');
+
+        $url = app(ResolveWebSocketUrl::class)->forRequest($request, '/ws/events');
+
+        $this->assertSame('wss://events.example.test/ws/events', $url);
+    }
+
+    public function test_events_token_uses_the_explicit_ws_url_override(): void
+    {
+        $this->actingAs($this->user);
+        config()->set('app.ws_url', 'https://ws.example.test');
+
+        $response = $this->post(route('events.token'));
+
+        $response->assertOk();
+        $this->assertSame('wss://ws.example.test/ws/events', $response->json('url'));
     }
 
     public function test_authenticate_rejects_missing_and_invalid_tokens(): void
@@ -155,10 +179,10 @@ class EventsHandlerTest extends TestCase
         $connProp = $reflection->getProperty('connections');
         $subProp = $reflection->getProperty('projectSubscriptions');
 
-        $mockConnection = $this->createMock(\App\WebSocket\WebSocketConnection::class);
+        $mockConnection = $this->createMock(WebSocketConnection::class);
         $mockConnection->expects($this->once())->method('send');
 
-        $mockOtherConnection = $this->createMock(\App\WebSocket\WebSocketConnection::class);
+        $mockOtherConnection = $this->createMock(WebSocketConnection::class);
         $mockOtherConnection->expects($this->never())->method('send');
 
         $projectId = $this->user->current_project_id;

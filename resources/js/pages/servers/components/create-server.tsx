@@ -26,6 +26,7 @@ import type { SharedData } from '@/types';
 import { DataTable } from '@/components/data-table';
 import { ColumnDef } from '@tanstack/react-table';
 import { EventBus } from '@/lib/event-bus';
+import { copyTextToClipboard } from '@/lib/clipboard';
 import {
   Dialog,
   DialogClose,
@@ -38,6 +39,7 @@ import {
 } from '@/components/ui/dialog';
 import ServerTemplates from './templates';
 import { ServerTemplate, Service } from '@/types/server-template';
+import { toast } from 'sonner';
 import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
@@ -285,13 +287,16 @@ export default function CreateServer({
   };
 
   const [copySuccess, setCopySuccess] = useState(false);
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(page.props.public_key_text).then(() => {
+  const copyToClipboard = async () => {
+    try {
+      await copyTextToClipboard(page.props.public_key_text);
       setCopySuccess(true);
       setTimeout(() => {
         setCopySuccess(false);
       }, 2000);
-    });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to copy to clipboard');
+    }
   };
 
   const [serverProviders, setServerProviders] = useState<ServerProvider[]>([]);

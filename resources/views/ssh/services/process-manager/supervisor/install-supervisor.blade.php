@@ -1,4 +1,6 @@
-sudo DEBIAN_FRONTEND=noninteractive apt-get install supervisor -y
+@include('ssh.os.apt-retry')
+
+vito_retry_apt sudo DEBIAN_FRONTEND=noninteractive apt-get install supervisor -y
 
 sudo systemctl enable supervisor
 

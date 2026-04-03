@@ -2,14 +2,17 @@
 
 namespace Tests\Feature;
 
+use App\Actions\Server\InstallServer;
 use App\Enums\OperatingSystem;
 use App\Enums\ServerStatus;
 use App\Enums\ServiceStatus;
 use App\Enums\UserRole;
+use App\Exceptions\SSHConnectionError;
 use App\Facades\SSH;
 use App\Models\Project;
 use App\Models\Server;
 use App\Models\ServerProvider;
+use App\Models\User;
 use App\NotificationChannels\Email\NotificationMail;
 use App\ServerProviders\Custom;
 use App\ServerProviders\Hetzner;
@@ -150,6 +153,47 @@ class ServerTest extends TestCase
             'id' => $this->server->id,
             'status' => ServerStatus::DISCONNECTED,
         ]);
+    }
+
+    public function test_install_server_times_out_when_the_provider_never_reports_running(): void
+    {
+        $sshFake = SSH::fake();
+
+        FakeInstallServerProvider::prime(array_fill(0, 18, false), false);
+        config()->set('server-provider.providers.fake-install-server.handler', FakeInstallServerProvider::class);
+        $this->server->update(['provider' => 'fake-install-server']);
+
+        try {
+            app(InstallServer::class)->run($this->server);
+            $this->fail('Expected the install to time out while waiting for the provider.');
+        } catch (SSHConnectionError $exception) {
+            $this->assertSame(
+                'Timed out waiting for the server provider to report the server as running.',
+                $exception->getMessage()
+            );
+        }
+
+        $sshFake->assertNotExecutedContains('create-user');
+    }
+
+    public function test_install_server_times_out_when_ssh_never_becomes_available(): void
+    {
+        $sshFake = SSH::fake();
+        $sshFake->connectionWillFail();
+
+        FakeInstallServerProvider::prime([true], true);
+        config()->set('server-provider.providers.fake-install-server.handler', FakeInstallServerProvider::class);
+        $this->server->update(['provider' => 'fake-install-server']);
+
+        try {
+            app(InstallServer::class)->run($this->server);
+            $this->fail('Expected the install to time out while waiting for SSH.');
+        } catch (SSHConnectionError $exception) {
+            $this->assertSame('Timed out waiting for SSH to become available.', $exception->getMessage());
+        }
+
+        $sshFake->assertNotExecutedContains('create-user');
+        $sshFake->assertNotExecutedContains('apt-get');
     }
 
     public function test_reboot_server(): void
@@ -594,7 +638,7 @@ class ServerTest extends TestCase
             ->assertSessionDoesntHaveErrors();
 
         // Reset server status for next test
-        $this->server->update(['status' => \App\Enums\ServerStatus::READY]);
+        $this->server->update(['status' => ServerStatus::READY]);
 
         // Test check updates
         $this->post(route('servers.check-for-updates', $this->server))
@@ -621,7 +665,7 @@ class ServerTest extends TestCase
             ->assertSessionDoesntHaveErrors();
 
         // Reset server status for next test
-        $this->server->update(['status' => \App\Enums\ServerStatus::READY]);
+        $this->server->update(['status' => ServerStatus::READY]);
 
         // Test check updates
         $this->post(route('servers.check-for-updates', $this->server))
@@ -638,7 +682,7 @@ class ServerTest extends TestCase
         $this->actingAs($this->user);
 
         // Create a server provider that belongs to a different user
-        $otherUser = \App\Models\User::factory()->create();
+        $otherUser = User::factory()->create();
         $unauthorizedProvider = ServerProvider::factory()->create([
             'user_id' => $otherUser->id,
             'provider' => Hetzner::id(),
@@ -713,5 +757,33 @@ class ServerTest extends TestCase
         $this->assertDatabaseMissing('servers', [
             'name' => 'test-vito-server',
         ]);
+    }
+}
+
+class FakeInstallServerProvider extends Custom
+{
+    /**
+     * @var array<int, bool>
+     */
+    private static array $readinessSequence = [];
+
+    private static bool $fallbackReady = false;
+
+    /**
+     * @param  array<int, bool>  $readinessSequence
+     */
+    public static function prime(array $readinessSequence, bool $fallbackReady): void
+    {
+        self::$readinessSequence = $readinessSequence;
+        self::$fallbackReady = $fallbackReady;
+    }
+
+    public function isRunning(): bool
+    {
+        if (self::$readinessSequence !== []) {
+            return (bool) array_shift(self::$readinessSequence);
+        }
+
+        return self::$fallbackReady;
     }
 }

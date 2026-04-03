@@ -1,6 +1,8 @@
+@include('ssh.os.apt-retry')
+
 sudo service mariadb stop
 
-sudo DEBIAN_FRONTEND=noninteractive apt-get remove mariadb-server mariadb-backup -y
+vito_retry_apt sudo DEBIAN_FRONTEND=noninteractive apt-get remove mariadb-server mariadb-backup -y
 
 sudo rm -rf /etc/mysql
 sudo rm -rf /var/lib/mysql

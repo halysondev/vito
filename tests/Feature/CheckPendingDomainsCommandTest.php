@@ -7,6 +7,7 @@ use App\Jobs\HostedDomain\CheckDomainJob;
 use App\Models\HostedDomain;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class CheckPendingDomainsCommandTest extends TestCase
@@ -74,5 +75,16 @@ class CheckPendingDomainsCommandTest extends TestCase
         $this->artisan('domains:check-pending')->assertSuccessful();
 
         Bus::assertDispatchedTimes(CheckDomainJob::class, 3);
+    }
+
+    public function test_it_exits_successfully_when_the_hosted_domains_table_is_missing(): void
+    {
+        Bus::fake();
+
+        Schema::dropIfExists('hosted_domains');
+
+        $this->artisan('domains:check-pending')->assertSuccessful();
+
+        Bus::assertNothingDispatched();
     }
 }

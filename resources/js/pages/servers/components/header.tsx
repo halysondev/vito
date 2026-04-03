@@ -10,6 +10,8 @@ import { router, useForm } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useRealtimeRecord } from '@/hooks/use-socket-events';
+import { copyTextToClipboard } from '@/lib/clipboard';
+import { toast } from 'sonner';
 
 import { InstantLogs } from '@/pages/server-logs/components/instant-logs';
 
@@ -41,13 +43,16 @@ export default function ServerHeader({ server: initialServer, site: initialSite 
   };
 
   const [ipCopied, setIpCopied] = useState(false);
-  const copyIp = (ip: string) => {
-    navigator.clipboard.writeText(ip).then(() => {
+  const copyIp = async (ip: string) => {
+    try {
+      await copyTextToClipboard(ip);
       setIpCopied(true);
       setTimeout(() => {
         setIpCopied(false);
       }, 2000);
-    });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to copy to clipboard');
+    }
   };
 
   return (

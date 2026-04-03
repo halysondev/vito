@@ -3,11 +3,13 @@
 namespace Tests\Feature;
 
 use App\Actions\WebSockets\GenerateWebSocketToken;
+use App\Actions\WebSockets\ResolveWebSocketUrl;
 use App\Enums\UserRole;
 use App\Models\User;
 use App\WebSocket\TerminalHandler;
 use GuzzleHttp\Psr7\Request as PsrRequest;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use React\EventLoop\Loop;
 use Tests\TestCase;
@@ -72,6 +74,30 @@ class ConsoleTest extends TestCase
         $url = $response->json('url');
         $this->assertNotEmpty($url);
         $this->assertStringContainsString('/ws/terminal', $url);
+        $this->assertStringNotContainsString(':8085', $url);
+    }
+
+    public function test_default_public_websocket_url_uses_standard_https_ports(): void
+    {
+        config()->set('app.ws_url', null);
+        $request = Request::create('https://console.example.test/servers/1/console/token', 'POST');
+
+        $url = app(ResolveWebSocketUrl::class)->forRequest($request, '/ws/terminal');
+
+        $this->assertSame('wss://console.example.test/ws/terminal', $url);
+    }
+
+    public function test_generate_token_uses_the_explicit_ws_url_override(): void
+    {
+        $this->actingAs($this->user);
+        config()->set('app.ws_url', 'https://ws.example.test');
+
+        $response = $this->post(route('console.token', $this->server), [
+            'user' => $this->server->getSshUser(),
+        ]);
+
+        $response->assertOk();
+        $this->assertSame('wss://ws.example.test/ws/terminal', $response->json('url'));
     }
 
     public function test_generate_token_with_root_user(): void
